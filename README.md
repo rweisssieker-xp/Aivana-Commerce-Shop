@@ -48,7 +48,24 @@ API-first, multi-tenant commerce backend with a minimal **AI basement** (keyword
 
 ## Monorepo layout
 
-- `apps/api` — Fastify + Prisma + commerce routes (`/v1/products`, `/v1/carts`, `/v1/search`)
+- `apps/api` — Fastify + Prisma + commerce routes (`/v1/products`, `/v1/carts`, `/v1/search`, `/v1/webhooks/endpoints`)
+
+## Webhooks (outbox)
+
+1. Register an endpoint (secret is returned **once**):
+
+   ```bash
+   curl -s -X POST -H "X-API-Key: YOUR_KEY" -H "Content-Type: application/json" \
+     -d "{\"url\":\"https://example.com/hooks\",\"events\":[\"order.created\"]}" \
+     "http://localhost:3000/v1/webhooks/endpoints"
+   ```
+
+2. On checkout, an `order.created` event is written to the **outbox**; the worker (poll interval `OUTBOX_POLL_MS`, default 3000) POSTs JSON to your URL with headers:
+
+   - `x-aivana-event-type`, `x-aivana-event-id`, `x-aivana-delivery-id`
+   - `x-aivana-signature: sha256=<hex>` — HMAC-SHA256 of the **raw body** with your endpoint `secret`
+
+3. List or delete: `GET /v1/webhooks/endpoints`, `DELETE /v1/webhooks/endpoints/:id`
 - `packages/shared-types` — shared TypeScript types
 
 ## Scripts
@@ -64,6 +81,7 @@ API-first, multi-tenant commerce backend with a minimal **AI basement** (keyword
 ## Security notes
 
 - API keys are stored **hashed** (SHA-256); the plain key is only shown once from `db:seed`.
+- Webhook signing secrets are stored **in plaintext** (needed for HMAC); treat like API keys and encrypt-at-rest in production.
 - Tenant isolation is enforced in application queries; enable Postgres RLS in production as a follow-up.
 
 ## License

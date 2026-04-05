@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { enqueueOrderCreatedEvent } from "../lib/outbox.js";
 
 const lineBody = z.object({
   variantId: z.string().uuid(),
@@ -97,6 +98,8 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
         include: { lines: { include: { variant: { include: { product: true } } } } },
       });
 
+      await enqueueOrderCreatedEvent(tx, tenantId, created);
+
       await tx.cartLine.deleteMany({ where: { cartId: cart.id } });
       await tx.cart.delete({ where: { id: cart.id } });
 
@@ -106,4 +109,3 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
     return reply.status(201).send(order);
   });
 };
-
