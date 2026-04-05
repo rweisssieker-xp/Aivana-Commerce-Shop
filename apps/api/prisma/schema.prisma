@@ -7,42 +7,54 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ApiEnvironment {
+  live
+  sandbox
+}
+
 model Tenant {
-  id               String             @id @default(uuid())
-  name             String
-  slug             String             @unique
-  createdAt        DateTime           @default(now())
-  apiKeys          ApiKey[]
-  products         Product[]
-  carts            Cart[]
-  orders           Order[]
-  variants         ProductVariant[]
-  webhookEndpoints WebhookEndpoint[]
-  outboxEvents     OutboxEvent[]
-  organizations    Organization[]
+  id                  String             @id @default(uuid())
+  name                String
+  slug                String             @unique
+  plan                String             @default("free")
+  monthlyOrderQuota   Int?
+  createdAt           DateTime           @default(now())
+  apiKeys             ApiKey[]
+  products            Product[]
+  carts               Cart[]
+  orders              Order[]
+  variants            ProductVariant[]
+  webhookEndpoints    WebhookEndpoint[]
+  outboxEvents        OutboxEvent[]
+  organizations       Organization[]
+  priceLists          PriceList[]
+  featureFlags        FeatureFlag[]
 }
 
 model ApiKey {
-  id        String    @id @default(uuid())
-  tenantId  String
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  keyHash   String    @unique
-  name      String
-  createdAt DateTime  @default(now())
-  revokedAt DateTime?
+  id          String         @id @default(uuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  keyHash     String         @unique
+  name        String
+  environment ApiEnvironment @default(live)
+  createdAt   DateTime       @default(now())
+  revokedAt   DateTime?
 
   @@index([tenantId])
 }
 
 model Organization {
-  id        String                 @id @default(uuid())
-  tenantId  String
-  tenant    Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name      String
-  slug      String
-  createdAt DateTime               @default(now())
-  members   OrganizationMember[]
-  orders    Order[]
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  priceListId String?
+  priceList   PriceList? @relation(fields: [priceListId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  members     OrganizationMember[]
+  orders      Order[]
 
   @@unique([tenantId, slug])
 }
@@ -55,6 +67,42 @@ model OrganizationMember {
   role           String       @default("buyer")
 
   @@unique([organizationId, email])
+}
+
+model PriceList {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  items     PriceListItem[]
+  organizations Organization[]
+
+  @@unique([tenantId, slug])
+}
+
+model PriceListItem {
+  id          String    @id @default(uuid())
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  priceCents  Int
+  currency    String    @default("EUR")
+
+  @@unique([priceListId, variantId])
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
 }
 
 model Product {
@@ -78,7 +126,6 @@ model ProductEmbedding {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   model     String   @default("text-embedding-3-small")
   dims      Int      @default(1536)
-  /// JSON array of floats (OpenAI embedding)
   values    Json
   updatedAt DateTime @updatedAt
 
@@ -86,16 +133,17 @@ model ProductEmbedding {
 }
 
 model ProductVariant {
-  id         String      @id @default(uuid())
-  tenantId   String
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku        String
-  priceCents Int
-  currency   String      @default("EUR")
-  cartLines  CartLine[]
-  orderLines OrderLine[]
+  id             String          @id @default(uuid())
+  tenantId       String
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku            String
+  priceCents     Int
+  currency       String          @default("EUR")
+  cartLines      CartLine[]
+  orderLines     OrderLine[]
+  priceListItems PriceListItem[]
 
   @@unique([tenantId, sku])
 }
@@ -126,6 +174,11 @@ model Order {
   organizationId  String?
   organization    Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   status          OrderStatus     @default(pending)
+  /// Net goods before tax (minor units)
+  netSubtotalCents Int?
+  taxTotalCents   Int?
+  taxCountry      String?
+  taxRateBps      Int?
   totalCents      Int
   currency        String          @default("EUR")
   createdAt       DateTime        @default(now())
