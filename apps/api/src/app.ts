@@ -6,6 +6,8 @@ import { productRoutes } from "./routes/products.js";
 import { cartRoutes } from "./routes/carts.js";
 import { searchRoutes } from "./routes/search.js";
 import { webhookRoutes } from "./routes/webhooks.js";
+import { orderRoutes } from "./routes/orders.js";
+import { organizationRoutes } from "./routes/organizations.js";
 import tenantAuthPlugin from "./plugins/tenant-auth.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -13,7 +15,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(swagger, {
     openapi: {
-      info: { title: "Aivana Commerce API", version: "0.1.0" },
+      info: { title: "Aivana Commerce API", version: "0.2.0" },
     },
   });
   await app.register(swaggerUi, { routePrefix: "/docs" });
@@ -26,6 +28,8 @@ export async function buildApp(): Promise<FastifyInstance> {
     await scope.register(cartRoutes);
     await scope.register(searchRoutes);
     await scope.register(webhookRoutes);
+    await scope.register(orderRoutes);
+    await scope.register(organizationRoutes);
   }, { prefix: "/v1" });
 
   return app;

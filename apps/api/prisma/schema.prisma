@@ -19,6 +19,7 @@ model Tenant {
   variants         ProductVariant[]
   webhookEndpoints WebhookEndpoint[]
   outboxEvents     OutboxEvent[]
+  organizations    Organization[]
 }
 
 model ApiKey {
@@ -33,17 +34,55 @@ model ApiKey {
   @@index([tenantId])
 }
 
+model Organization {
+  id        String                 @id @default(uuid())
+  tenantId  String
+  tenant    Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  createdAt DateTime               @default(now())
+  members   OrganizationMember[]
+  orders    Order[]
+
+  @@unique([tenantId, slug])
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String       @default("buyer")
+
+  @@unique([organizationId, email])
+}
+
 model Product {
-  id          String           @id @default(uuid())
+  id          String             @id @default(uuid())
   tenantId    String
-  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   slug        String
   description String?
-  createdAt   DateTime         @default(now())
+  createdAt   DateTime           @default(now())
   variants    ProductVariant[]
+  embedding   ProductEmbedding?
 
   @@unique([tenantId, slug])
+}
+
+model ProductEmbedding {
+  id        String   @id @default(uuid())
+  tenantId  String
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  model     String   @default("text-embedding-3-small")
+  dims      Int      @default(1536)
+  /// JSON array of floats (OpenAI embedding)
+  values    Json
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model ProductVariant {
@@ -81,14 +120,17 @@ model CartLine {
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  tenantId   String
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  status     OrderStatus @default(pending)
-  totalCents Int
-  currency   String      @default("EUR")
-  createdAt  DateTime    @default(now())
-  lines      OrderLine[]
+  id              String          @id @default(uuid())
+  tenantId        String
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationId  String?
+  organization    Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  status          OrderStatus     @default(pending)
+  totalCents      Int
+  currency        String          @default("EUR")
+  createdAt       DateTime        @default(now())
+  lines           OrderLine[]
+  events          OrderEvent[]
 }
 
 enum OrderStatus {
@@ -107,6 +149,19 @@ model OrderLine {
   unitPriceCents Int
 
   @@index([orderId])
+}
+
+model OrderEvent {
+  id        String   @id @default(uuid())
+  tenantId  String
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([tenantId])
 }
 
 model WebhookEndpoint {

@@ -8,6 +8,12 @@ const lineBody = z.object({
   quantity: z.number().int().positive(),
 });
 
+const checkoutBody = z
+  .object({
+    organizationId: z.string().uuid().optional(),
+  })
+  .optional();
+
 export const cartRoutes: FastifyPluginAsync = async (app) => {
   app.post("/carts", async (req) => {
     const tenantId = req.tenantId;
@@ -61,7 +67,22 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string } }>("/carts/:id/checkout", async (req, reply) => {
+    const parsedCheckout = checkoutBody.safeParse(req.body);
+    if (!parsedCheckout.success) {
+      return reply.status(400).send({ error: "Invalid body", details: parsedCheckout.error.flatten() });
+    }
+    const orgId = parsedCheckout.data?.organizationId;
     const tenantId = req.tenantId;
+
+    if (orgId) {
+      const org = await prisma.organization.findFirst({
+        where: { id: orgId, tenantId },
+      });
+      if (!org) {
+        return reply.status(400).send({ error: "organizationId not found for tenant" });
+      }
+    }
+
     const cart = await prisma.cart.findFirst({
       where: { id: req.params.id, tenantId },
       include: { lines: { include: { variant: true } } },
@@ -84,6 +105,7 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
       const created = await tx.order.create({
         data: {
           tenantId,
+          organizationId: orgId ?? null,
           status: "pending",
           totalCents: total,
           currency,

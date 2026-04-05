@@ -26,6 +26,19 @@ export async function enqueueOrderCreatedEvent(
     })),
   };
 
+  await tx.orderEvent.create({
+    data: {
+      tenantId,
+      orderId: order.id,
+      kind: "order.created",
+      payload: {
+        totalCents: order.totalCents,
+        currency: order.currency,
+        lineCount: order.lines.length,
+      },
+    },
+  });
+
   const event = await tx.outboxEvent.create({
     data: {
       tenantId,

@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { enqueueProductEmbed } from "../lib/queues.js";
 
 const createBody = z.object({
   name: z.string().min(1),
@@ -15,6 +16,12 @@ const createBody = z.object({
       })
     )
     .min(1),
+});
+
+const patchBody = z.object({
+  name: z.string().min(1).optional(),
+  slug: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
 });
 
 export const productRoutes: FastifyPluginAsync = async (app) => {
@@ -42,6 +49,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
       },
       include: { variants: true },
     });
+    void enqueueProductEmbed(product.id);
     return reply.status(201).send(product);
   });
 
@@ -65,5 +73,30 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
     }
     return product;
   });
-};
 
+  app.patch<{ Params: { id: string } }>("/products/:id", async (req, reply) => {
+    const parsed = patchBody.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: "Invalid body", details: parsed.error.flatten() });
+    }
+    const tenantId = req.tenantId;
+    const data = parsed.data;
+    const existing = await prisma.product.findFirst({
+      where: { id: req.params.id, tenantId },
+    });
+    if (!existing) {
+      return reply.status(404).send({ error: "Not found" });
+    }
+    const product = await prisma.product.update({
+      where: { id: existing.id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.slug !== undefined ? { slug: data.slug } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+      },
+      include: { variants: true },
+    });
+    void enqueueProductEmbed(product.id);
+    return product;
+  });
+};
