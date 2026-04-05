@@ -6,7 +6,8 @@ API-first, multi-tenant commerce backend with **webhooks (outbox)**, **B2B organ
 
 - Node.js 22+
 - [pnpm](https://pnpm.io/) 9+ (`corepack enable` or `npx pnpm`)
-- Docker (PostgreSQL + Redis), or your own Postgres 16 and Redis 7
+- **PostgreSQL 16+** (lokal oder gehostet) — Connection-String in `.env` als `DATABASE_URL`
+- Optional: **Redis 7+** für Embedding-Queue (`REDIS_URL`) — ohne Redis funktioniert der Rest, Embeddings werden nur nicht in die Queue gelegt
 
 ## Quickstart
 
@@ -16,15 +17,9 @@ API-first, multi-tenant commerce backend with **webhooks (outbox)**, **B2B organ
    cp .env.example .env
    ```
 
-   Set `OPENAI_API_KEY` for semantic/hybrid search and automatic embeddings after product create/update.
+   Passe `DATABASE_URL` an deine Postgres-Instanz an. Setze `OPENAI_API_KEY` für semantische/hybride Suche und automatische Embeddings nach Produkt-Anlage/-Update. Optional `REDIS_URL` (z. B. `redis://127.0.0.1:6379`).
 
-2. Start services:
-
-   ```bash
-   docker compose up -d
-   ```
-
-3. Install and migrate:
+2. Install and migrate:
 
    ```bash
    pnpm install
@@ -32,13 +27,13 @@ API-first, multi-tenant commerce backend with **webhooks (outbox)**, **B2B organ
    pnpm db:seed
    ```
 
-4. Run the API:
+3. Run the API:
 
    ```bash
    pnpm --filter @aivana/api dev
    ```
 
-5. Example calls (use `apiKey` from `db:seed`):
+4. Example calls (use `apiKey` from `db:seed`):
 
    ```bash
    curl -s -H "X-API-Key: YOUR_KEY" "http://localhost:3000/v1/products"
