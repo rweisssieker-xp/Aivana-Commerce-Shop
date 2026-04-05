@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aivana
+      POSTGRES_PASSWORD: aivana
+      POSTGRES_DB: aivana
+    ports:
+      - "5432:5432"
+    volumes:
+      - aivana_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aivana -d aivana"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  aivana_pg:

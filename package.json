@@ -1,0 +1,20 @@
+{
+  "name": "aivana-commerce-shop",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @aivana/api exec prisma generate",
+    "db:migrate": "pnpm --filter @aivana/api exec prisma migrate dev",
+    "db:push": "pnpm --filter @aivana/api exec prisma db push",
+    "db:seed": "pnpm --filter @aivana/api exec tsx prisma/seed.ts",
+    "db:studio": "pnpm --filter @aivana/api exec prisma studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

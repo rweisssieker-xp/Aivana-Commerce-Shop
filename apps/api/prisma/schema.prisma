@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  apiKeys   ApiKey[]
+  products  Product[]
+  carts     Cart[]
+  orders    Order[]
+  variants  ProductVariant[]
+}
+
+model ApiKey {
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  keyHash   String    @unique
+  name      String
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([tenantId])
+}
+
+model Product {
+  id          String           @id @default(uuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  createdAt   DateTime         @default(now())
+  variants    ProductVariant[]
+
+  @@unique([tenantId, slug])
+}
+
+model ProductVariant {
+  id         String      @id @default(uuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku        String
+  priceCents Int
+  currency   String      @default("EUR")
+  cartLines  CartLine[]
+  orderLines OrderLine[]
+
+  @@unique([tenantId, sku])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  lines     CartLine[]
+}
+
+model CartLine {
+  id        String         @id @default(uuid())
+  cartId    String
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  quantity  Int
+
+  @@index([cartId])
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  status     OrderStatus @default(pending)
+  totalCents Int
+  currency   String      @default("EUR")
+  createdAt  DateTime    @default(now())
+  lines      OrderLine[]
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+model OrderLine {
+  id             String         @id @default(uuid())
+  orderId        String
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId      String
+  variant        ProductVariant @relation(fields: [variantId], references: [id])
+  quantity       Int
+  unitPriceCents Int
+
+  @@index([orderId])
+}
