@@ -98,3 +98,14 @@ With `REDIS_URL` (see `.env.example`), **BullMQ** runs an **embed worker** that 
 ## License
 
 Private / unlicensed — adjust for your product.
+
+## More Aivana software
+
+For other Aivana products, see the official product pages below. These are separate products from this commerce backend; their features, requirements and entry options are documented on the Aivana website.
+
+- [Diagramora – editable diagrams from language, code and SQL](https://aivana-gmbh.ai/de/diagramora)
+- [Project Intelligence – project and resource analysis in Power BI](https://aivana-gmbh.ai/de/powerbi-visuals/project-intelligence)
+- [Financial Reporting – financial matrix and contextual comments](https://aivana-gmbh.ai/de/powerbi-visuals/financial-reporting)
+- [Finoryx – financial analysis and scenario exploration in Power BI](https://aivana-gmbh.ai/de/powerbi-visuals/finoryx)
+
+[Explore Aivana use cases](https://aivana-gmbh.ai/de/Solutions) · [Compare the product portfolio](https://aivana-gmbh.ai/de/products)
