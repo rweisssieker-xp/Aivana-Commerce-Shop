@@ -106,6 +106,10 @@ For other Aivana products, see the official product pages below. These are separ
 - [Diagramora – editable diagrams from language, code and SQL](https://aivana-gmbh.ai/de/diagramora)
 - [Project Intelligence – project and resource analysis in Power BI](https://aivana-gmbh.ai/de/powerbi-visuals/project-intelligence)
 - [Financial Reporting – financial matrix and contextual comments](https://aivana-gmbh.ai/de/powerbi-visuals/financial-reporting)
-- [Finoryx – financial analysis and scenario exploration in Power BI](https://aivana-gmbh.ai/de/powerbi-visuals/finoryx)
+- [Finoryx – financial analysis and scenario exploration in Power BI](https://aivana-gmbh.ai/de/powerbi-visuals/finoryx?utm_source=github)
+
+- [Decision Intelligence – evidence-linked Azure DevOps Services analysis (development preview)](https://aivana-gmbh.ai/en/decision-intelligence?utm_source=github)
+
+Product updates (Deutsch / English): [Finoryx workflow and trial](docs/products/finoryx.md) · [Decision Intelligence workflow and project enquiry](docs/products/decision-intelligence.md).
 
 [Explore Aivana use cases](https://aivana-gmbh.ai/de/Solutions) · [Compare the product portfolio](https://aivana-gmbh.ai/de/products)
